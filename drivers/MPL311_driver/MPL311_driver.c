@@ -183,7 +183,7 @@ void MPL_set_acqTimeInterval(uint32_t t_ms) {
 
 /**
  * Set the accusition timestep.
- * Step value is 2 ST : Giving a range of 1 second to 2 15 seconds (9 hours)
+ * Step value is 2 ST : Giving a range of 1 second to 2^15 seconds (9 hours)
  */
 void MPL_set_timestep(uint8_t ST) {
 	uint8_t currData = MPL_rd_reg(CTRL_REG2);
@@ -197,7 +197,7 @@ void MPL_set_timestep(uint8_t ST) {
 uint32_t MPL_read_pressure(void) {
 	volatile uint32_t result = 0;
 	MPL_multi_rd(OUT_P_MSB, buffer, 3);
-	result = buffer[0]<<12 | buffer[1]<<4 | buffer[2]>>4;
+	result = buffer[0]<<10 | buffer[1]<<2 | buffer[2]>>6;
 	return result;
 }
 

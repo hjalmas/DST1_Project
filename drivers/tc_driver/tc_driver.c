@@ -41,7 +41,7 @@ void tc_init(Tc *p_tc, uint32_t ul_channel, uint32_t ul_mode) {
 }
 
 /**
- * Configure TC for 2-bit Gray Counter for Stepper Motor.
+ * Configure TC for 2-bit Gray Counter.
  */
 uint32_t tc_init_2bit_gray(Tc *p_tc, uint32_t ul_channel, uint32_t ul_steppermode) {
 	p_tc->TC_CHANNEL[ul_channel].TC_SMMR = ul_steppermode;

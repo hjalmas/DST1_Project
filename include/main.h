@@ -22,6 +22,8 @@
 #include "../drivers/twi_driver/twi_driver.h"
 #include "../drivers/MPL311_driver/MPL311_driver.h"
 #include "../drivers/servo/servo.h"
+#include "../drivers/ldr_driver/ldr_driver.h"
+#include "../drivers/suntracker/suntracker.h"
 
 #endif
 

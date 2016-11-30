@@ -49,6 +49,8 @@ extern void cbKeyPress(void);
 extern void cbTempSensor(void);
 extern void cbBarometer(void);
 
+extern void toggle(void);
+
 void delay_ms(uint32_t t_ms);
 uint32_t getTicks(void);
 
@@ -98,13 +100,8 @@ int main(int argc, char* argv[]) {
 	gui_init();
 	temp_init();
 	MPL_init();
-	servo_init();
-
-
-	/* Enable ADC module */
-	PMC->PMC_PCER1 = 1 << (ID_ADC - 32);
-
-
+	suntracker_init();
+	suntracker_start();
 
 	while (1) {
 		if(QSize > 0) {
@@ -154,6 +151,10 @@ void delay_ms(uint32_t t_ms) {
  * 										INTERRUPT HANDLERS
  * --------------------------------------------------------------------------------------------------
  */
+
+/**
+ * This function enters once each ms.
+ */
 void SysTick_Handler(void) {
 	ticks++;
 
@@ -165,6 +166,11 @@ void SysTick_Handler(void) {
 	if(ticks % pressureAcqInterval == 0) {
 		/* Add callback routine to function queue */
 		fnQOffer(cbBarometer);
+	}
+
+	if(ticks % SUNTRACKER_DT == 0) {
+		/* Add suntracker callback routine to function queue */
+		fnQOffer(cbSuntracker);
 	}
 
 }
@@ -199,8 +205,6 @@ void PIOD_Handler(void) {
 		KPAD_PORT->PIO_IFER = KPAD_ROW_MSK; 	/* Enable debounce */
 	}
 }
-
-
 
 #pragma GCC diagnostic pop
 

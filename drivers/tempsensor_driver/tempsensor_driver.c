@@ -53,8 +53,8 @@ void temp_init(void) {
 	pio_set_pin(TEMP_PIO, TEMP_PIN, 1);
 
 	/* Setup TC */
+	PMC->PMC_PCER0 = 1 << ID_TC0;
 	tc_set_writeprotect(TEMP_TC, 0);
-	PMC->PMC_PCER0 = 1 << TC0_IRQn;
 	volatile uint32_t settings =
 			TC_CMR_TCCLKS_TIMER_CLOCK1  |	/* 42Mhz */
 			TC_CMR_LDRA_FALLING			| 	/* RA Loads on falling edge on TIOA */
@@ -88,7 +88,7 @@ void temp_trig(void) {
  * Sets the time interval between consecutive samples.
  */
 void temp_set_acqInterval(uint32_t t_ms) {
-
+	temperatureAcqInterval = t_ms;
 }
 
 /**

@@ -1,12 +1,12 @@
 /*
- * ldr_driver.h
+ * suntracker.h
  *
- *  Created on: Nov 24, 2016
+ *  Created on: Nov 30, 2016
  *      Author: root
  */
 
-#ifndef LDR_DRIVER_H_
-#define LDR_DRIVER_H_
+#ifndef SUNTRACKER_H_
+#define SUNTRACKER_H_
 
 /**
  * --------------------------------------------------------------------------------------------------
@@ -20,21 +20,19 @@
 #include "cmsis_device.h"
 #include "sam3x_conf.h"
 
-#include "../pio_driver/pio_driver.h"
+#include "../servo/servo.h"
+#include "../ldr_driver/ldr_driver.h"
 
-/**
- * --------------------------------------------------------------------------------------------------
- * 										VARIABLES
- * --------------------------------------------------------------------------------------------------
- */
 
 /**
  * --------------------------------------------------------------------------------------------------
  * 										DEFINES
  * --------------------------------------------------------------------------------------------------
  */
-#define LDR_LEFT_PIN			PIO_PA16X1_AD7		/* Arduino pin A0 */
-#define LDR_RIGHT_PIN			PIO_PA24X1_AD6		/* Arduino pin A1 */
+
+/* delta time in ms, update period */
+#define SUNTRACKER_DT 20
+
 
 /**
  * --------------------------------------------------------------------------------------------------
@@ -43,18 +41,25 @@
  */
 
 /**
- * Initializes the ldr driver.
+ * Initializes the suntracker.
  */
-void ldr_init(void);
+void suntracker_init(void);
 
-/*
- * Read the left ldr.
+/**
+ * Starts the operation of the suntracker.
  */
-int32_t ldr_rd_left(void);
+void suntracker_start(void);
 
-/*
- * Read the right ldr.
+/**
+ * Stops the operation of the suntracker.
  */
-int32_t ldr_rd_right(void);
+void suntracker_stop(void);
 
-#endif /* LDR_DRIVER_H_ */
+/**
+ * Updates the position of the suntracker
+ * if the suntracker is in ON state.
+ */
+void cbSuntracker(void);
+
+
+#endif /* SUNTRACKER_H_ */
