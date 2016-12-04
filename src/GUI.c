@@ -27,10 +27,14 @@ typedef struct PAGE {
 #define PAGE_MAIN_MENU 			0
 #define PAGE_LIVE_WEATHER 		1
 #define PAGE_ERROR				2
+#define PAGE_SETTINGS			3
+#define PAGE_SETTINGS_DATETIME	4
 
 static Page_t page_main_menu;
 static Page_t page_live_weather;
 static Page_t page_error;
+static Page_t page_settings;
+static Page_t page_settings_datetime;
 
 /**
  * -----------------------------------------------------------------------------------------------------
@@ -64,6 +68,36 @@ Button_t returnButton;
 /* Error page components -------------------------*/
 Button_t errorOkBtn;
 
+/* Settings page components ----------------------*/
+Button_t dateTimeBtn;
+Button_t settingsReturnBtn;
+void* componentsSetting[] = {
+		&dateTimeBtn,
+		&settingsReturnBtn
+};
+uint32_t settingsIdx = 0;
+
+/* Settings_datetime components ------------------*/
+Button_t dateTimeOkBtn;
+Button_t dateTimeCancelBtn;
+TextField_t secondsTxtField;
+TextField_t minutesTxtField;
+TextField_t hoursTxtField;
+TextField_t dateTxtField;
+TextField_t monthTxtField;
+TextField_t yearTxtField;
+void* componentsDateTime[] = {
+	&secondsTxtField,
+	&minutesTxtField,
+	&hoursTxtField,
+	&dateTxtField,
+	&monthTxtField,
+	&yearTxtField,
+	&dateTimeOkBtn,
+	&dateTimeCancelBtn
+};
+uint32_t dateTimeIdx = 0;
+
 /**
  * -----------------------------------------------------------------------------------------------------
  * 												PROTOTYPES
@@ -74,6 +108,8 @@ void gui_init(void);
 void showMainMenu(void);
 void showLiveWeatherData(void);
 void showErrorPage(char** messages, uint32_t length);
+void showSettingsPage(void);
+void showSettingsDateTimePage(void);
 
 /* Peripheral callback functions------------*/
 void cbKeyPress(void);
@@ -91,6 +127,14 @@ void cbReturnButton(void);
 
 /* Error page callbacks --------------------*/
 void cbErrorOkBtn(void);
+
+/* Settings page callbacks -----------------*/
+void cbDateTimeBtn(void);
+void cbSettingsReturnBtn(void);
+
+/* Settings_datetime callback functions */
+void cbDateTimeOkBtn(void);
+void cbDateTimeCancelBtn(void);
 
 /* Private functions -----------------------*/
 static void degCelsius(uint16_t row, uint16_t col);
@@ -122,6 +166,15 @@ void gui_init(void) {
 	page_error.showPageFn = NULL;
 	page_error.selectedComponent = &errorOkBtn;
 
+	page_settings.PAGE = PAGE_SETTINGS;
+	page_settings.showPageFn = showSettingsPage;
+	page_settings.selectedComponent = &dateTimeBtn;
+
+	page_settings_datetime.PAGE = PAGE_SETTINGS_DATETIME;
+	page_settings_datetime.showPageFn = showSettingsDateTimePage;
+	page_settings_datetime.selectedComponent = &secondsTxtField;
+
+
 	/* Initialize main menu components */
 	gui_Button_init(&menuLiveWeatherDataBtn,"Live Weather Data", 7, 10, 20, cbMenuLiveWeatherDataBtn);
 	gui_Button_init(&menuItem2Btn,"Page 2", 9, 10, 20, cbMenuItem2Btn);
@@ -137,6 +190,20 @@ void gui_init(void) {
 
 	/* Initialize error page components */
 	gui_Button_init(&errorOkBtn, "OK", 14, 15, 10, cbErrorOkBtn);
+
+	/* Initialize settings page components */
+	gui_Button_init(&dateTimeBtn, "Date/time", 4, 2, 12, cbDateTimeBtn);
+	gui_Button_init(&settingsReturnBtn, "Return", 15, 16, 8, cbSettingsReturnBtn);
+
+	/* Initialize settings_datetime components */
+	gui_Button_init(&dateTimeCancelBtn, "Cancel", 15, 32, 6, cbDateTimeCancelBtn);
+	gui_Button_init(&dateTimeOkBtn, "Ok", 15, 26, 4, cbDateTimeOkBtn);
+	gui_TextField_init(&secondsTxtField, "", 4, 19, 5, NULL);
+	gui_TextField_init(&minutesTxtField, "", 6, 19, 5, NULL);
+	gui_TextField_init(&hoursTxtField, "", 8, 19, 5, NULL);
+	gui_TextField_init(&dateTxtField, "", 10, 19, 5, NULL);
+	gui_TextField_init(&monthTxtField, "", 12, 19, 5, NULL);
+	gui_TextField_init(&yearTxtField, "", 14, 19, 5, NULL);
 
 	showMainMenu();
 }
@@ -202,6 +269,61 @@ void showErrorPage(char** messages, uint32_t length) {
 }
 
 /**
+ * Show the settings page on the screen.
+ */
+void showSettingsPage(void) {
+	currPage = &page_settings;
+	disp_full_clear();
+	graph_draw_rect(0, 0, 240, 128, true);
+	graph_draw_rect(2, 2, 236, 124, true);
+	graph_print_textBox("~Settings~", 2, 1, TEXT_ALIGN_CENTER);
+
+	gui_Button_show(&settingsReturnBtn);
+	gui_Button_show(&dateTimeBtn);
+}
+
+/**
+ * Shows the dateTime settings page on the screen.
+ */
+void showSettingsDateTimePage(void) {
+	currPage = &page_settings_datetime;
+	disp_full_clear();
+	graph_draw_rect(0, 0, 240, 128, true);
+	graph_draw_rect(2, 2, 236, 124, true);
+	graph_print_textBox("~Set Date/Time~", 2, 1, TEXT_ALIGN_CENTER);
+
+	gui_Button_show(&dateTimeCancelBtn);
+	gui_Button_show(&dateTimeOkBtn);
+	timestamp_t* time = rtc_get_timestamp();
+
+	graph_print_text("Minutes: ", 6, 9, TEXT_ALIGN_LEFT);
+	sprintf(minutesTxtField.text, "%d", time->minutes);
+	gui_TextField_show(&minutesTxtField);
+
+	graph_print_text("Hours: ", 8, 9, TEXT_ALIGN_LEFT);
+	sprintf(hoursTxtField.text, "%d", time->hours);
+	gui_TextField_show(&hoursTxtField);
+
+	graph_print_text("Day: ", 10, 9, TEXT_ALIGN_LEFT);
+	sprintf(dateTxtField.text, "%d", time->date);
+	gui_TextField_show(&dateTxtField);
+
+	graph_print_text("Month: ", 12, 9, TEXT_ALIGN_LEFT);
+	sprintf(monthTxtField.text, "%d", time->month);
+	gui_TextField_show(&monthTxtField);
+
+	graph_print_text("Year: ", 14, 9, TEXT_ALIGN_LEFT);
+	sprintf(yearTxtField.text, "%d", time->year);
+	gui_TextField_show(&yearTxtField);
+
+	graph_print_text("Seconds: ", 4, 9, TEXT_ALIGN_LEFT);
+	sprintf(secondsTxtField.text, "%d", time->seconds);
+	gui_TextField_show(&secondsTxtField);
+
+	free(time);
+}
+
+/**
  * -----------------------------------------------------------------------------------------------------
  * 										PERIPHERAL CALLBACK FUNCTIONS
  * -----------------------------------------------------------------------------------------------------
@@ -249,6 +371,14 @@ void cbKeyPress(void) {
 		if(currPage->PAGE == PAGE_MAIN_MENU) {
 			menuIdx == 0 ? menuIdx = 3 : menuIdx--;
 			gui_select_component(componentsMM[menuIdx]);
+
+	 	} else if(currPage->PAGE == PAGE_SETTINGS) {
+	 		settingsIdx == 0 ? settingsIdx = 1 : settingsIdx--;
+	 		gui_select_component(componentsSetting[settingsIdx]);
+
+	 	} else if(currPage->PAGE == PAGE_SETTINGS_DATETIME) {
+	 		dateTimeIdx == 0 ? dateTimeIdx = 7 : dateTimeIdx--;
+	 		gui_select_component(componentsDateTime[dateTimeIdx]);
 	 	}
 
 		break;
@@ -257,7 +387,15 @@ void cbKeyPress(void) {
 		if(currPage->PAGE == PAGE_MAIN_MENU) {
 			menuIdx == 3 ? menuIdx = 0 : menuIdx++;
 			gui_select_component(componentsMM[menuIdx]);
-		}
+
+		} else if(currPage->PAGE == PAGE_SETTINGS) {
+	 		settingsIdx == 1 ? settingsIdx = 0 : settingsIdx++;
+	 		gui_select_component(componentsSetting[settingsIdx]);
+
+	 	} else if(currPage->PAGE == PAGE_SETTINGS_DATETIME) {
+	 		dateTimeIdx == 7 ? dateTimeIdx = 0 : dateTimeIdx++;
+	 		gui_select_component(componentsDateTime[dateTimeIdx]);
+	 	}
 
 		break;
 	case KEY_C:
@@ -323,12 +461,7 @@ void cbMenuItem3Btn(void) {
 }
 
 void cbMenuSettingsBtn(void) {
-	char* errorMsg[3];
-	errorMsg[0] = "This page is not defined yet!";
-	errorMsg[1] = "Please go ahead and";
-	errorMsg[2] = "program the contents!!";
-	gui_select_component(&errorOkBtn);
-	showErrorPage(errorMsg, 3);
+	showPage(&page_settings);
 }
 
 /* Live weather data callbacks -------------*/
@@ -339,6 +472,24 @@ void cbReturnButton(void) {
 /* Error page callbacks --------------------*/
 void cbErrorOkBtn(void) {
 	showPage(previousPage);
+}
+
+/* Settings page callbacks -----------------*/
+void cbDateTimeBtn(void) {
+	showPage(&page_settings_datetime);
+}
+
+void cbSettingsReturnBtn(void) {
+	showPage(&page_main_menu);
+}
+
+/* Settings_datetime callback functions ----*/
+void cbDateTimeOkBtn(void) {
+
+}
+
+void cbDateTimeCancelBtn(void) {
+	showPage(&page_settings);
 }
 
 /**

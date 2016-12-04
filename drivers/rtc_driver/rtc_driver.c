@@ -68,9 +68,19 @@ uint8_t buffer[10];
 #define CTRL_RS0_MSK		0x01
 
 /* Macro's */
-#define osc_en(a) 		(a << 7 & OSC_EN_MSK)
-#define second10(a) 	((a << 4) & SECOND10_MSK)
-#define second(a)		(a & SECOND_MSK)
+#define osc_en(a) 		((a) << 7 & OSC_EN_MSK)
+#define second10(a) 	(((a) << 4) & SECOND10_MSK)
+#define second(a)		((a) & SECOND_MSK)
+#define minute10(a)		(((a) << 4) & MIN10_MSK)
+#define minute(a)		((a) & MIN_MSK)
+#define hour10(a)		(((a) << 4) & HOUR10_MSK)
+#define hour(a)			((a) & HOUR_MSK)
+#define date10(a) 		(((a) << 4) & DATE10_MSK)
+#define date(a)			((a) & DATE_MSK)
+#define month10(a) 		(((a) << 4) & MONTH10_MSK)
+#define month(a)		((a) & MONTH_MSK)
+#define year10(a)		(((a) << 4) & YEAR10_MSK)
+#define year(a)			((a) & YEAR_MSK)
 
 /**
  * --------------------------------------------------------------------------------------------------
@@ -88,10 +98,17 @@ static uint8_t rtc_rd_reg(uint8_t reg);
 static uint8_t rtc_wr_reg(uint8_t reg, uint8_t data);
 
 /**
+ * Stops the rtc module.
+ */
+static void rtc_startStop(bool start);
+
+/**
  * --------------------------------------------------------------------------------------------------
  * 										DECLARATIONS
  * --------------------------------------------------------------------------------------------------
  */
+
+timestamp_t ts;
 
 /**
  * Initializes the rtc module.
@@ -121,6 +138,79 @@ void rtc_init(void) {
 	txPacket.buffer = buffer;
 	txPacket.addr_length = 1;
 	txPacket.length = 1;
+
+	/* Set 24H mode */
+	volatile uint8_t tmp = rtc_rd_reg(HOURS);
+	rtc_wr_reg(HOURS, tmp & ~HOUR_AMPM_MSK);
+}
+
+/**
+ * Sets the time of the rtc module.
+ */
+void rtc_set_time(timestamp_t* time) {
+	/* Stop the clock */
+	rtc_startStop(false);
+
+	/* Set seconds */
+	rtc_wr_reg(SECONDS, OSC_EN_MSK | second10(time->seconds / 10) | second(time->seconds % 10));
+
+	/* Set minutes */
+	rtc_wr_reg(MINUTES, minute10(time->minutes / 10) | minute(time->minutes % 10));
+
+	/* Set hours */
+	rtc_wr_reg(HOURS, hour10(time->hours / 10) | hour(time->hours % 10));
+
+	/* Set day of week */
+	rtc_wr_reg(DAY, time->day & DAY_MSK);
+
+	/* Set date (day of month) */
+	rtc_wr_reg(DATE, date10(time->date / 10) | date(time->date % 10));
+
+	/* Set month */
+	rtc_wr_reg(MONTH, month10(time->month / 10) | month(time->month % 10));
+
+	/* Set year */
+	rtc_wr_reg(YEAR, year10(time->year / 10) | year(time->year % 10));
+
+	/* Start the clock */
+	rtc_startStop(true);
+}
+
+/**
+ * Returns a pointer to a timestamp_t instance.
+ */
+timestamp_t* rtc_get_timestamp(void) {
+	timestamp_t* result = malloc(sizeof(timestamp_t));
+
+	/* Set seconds */
+	volatile uint8_t tmp = rtc_rd_reg(SECONDS);
+	result->seconds = ((tmp & SECOND10_MSK) >> 4) * 10 + tmp & SECOND_MSK;
+
+	/* Set minutes */
+	tmp = rtc_rd_reg(MINUTES);
+	result->minutes = ((tmp & MIN10_MSK) >> 4) * 10 + tmp & MIN_MSK;
+
+	/* Set hours */
+	tmp = rtc_rd_reg(HOURS);
+	result->hours = ((tmp & HOUR10_MSK) >> 4) * 10 + tmp & HOUR_MSK;
+
+	/* Set Day */
+	tmp = rtc_rd_reg(DAY);
+	result->day = tmp & DAY_MSK;
+
+	/* Set date */
+	tmp = rtc_rd_reg(DATE);
+	result->date = ((tmp & DATE10_MSK) >> 4) * 10 + tmp & DATE_MSK;
+
+	/* Set month */
+	tmp = rtc_rd_reg(MONTH);
+	result->month = ((tmp & MONTH10_MSK) >> 4) * 10 + tmp & MONTH_MSK;
+
+	/* Set year */
+	tmp = rtc_rd_reg(YEAR);
+	result->year = ((tmp & YEAR10_MSK) >> 4) * 10 + tmp & YEAR_MSK;
+
+	return result;
 }
 
 /**
@@ -147,6 +237,18 @@ static uint8_t rtc_wr_reg(uint8_t reg, uint8_t data) {
 	twi_master_write(TWI1, &txPacket);
 }
 
+/**
+ * Stops the rtc module.
+ */
+static void rtc_startStop(bool start) {
+	volatile uint8_t tmp = rtc_rd_reg(SECONDS);
+
+	if(start) {
+		rtc_wr_reg(SECONDS, tmp & ~OSC_EN_MSK);
+	} else {
+		rtc_wr_reg(SECONDS, tmp | OSC_EN_MSK);
+	}
+}
 
 
 
