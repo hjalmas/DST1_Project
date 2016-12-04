@@ -102,6 +102,7 @@ int main(int argc, char* argv[]) {
 	MPL_init();
 	suntracker_init();
 	suntracker_start();
+	rtc_init();
 
 	while (1) {
 		if(QSize > 0) {

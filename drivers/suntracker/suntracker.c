@@ -25,7 +25,7 @@ bool suntrackerState = false;
 bool suntrackerLocked = false;
 
 /* Current angle of the servo */
-int32_t currAng = 90;
+static int32_t currAng = 90;
 
 /* PID variables */
 static int32_t integral = 0;
@@ -79,18 +79,17 @@ void cbSuntracker(void) {
 	}
 
 	/* PID regulator stuff */
-	volatile int32_t err = ldr_rd_right() - ldr_rd_left();
-	volatile int32_t derivative = (err - prevErr) * 50;
+	volatile int32_t err = (ldr_rd_right() - ldr_rd_left()) / 23;
 	integral += (err * SUNTRACKER_DT) / 1000;
-	currAng += (20*err + 5*integral + 1*derivative) / 10000;
+	currAng += (err + integral) / 10;
 
 	if (currAng < 0) {
 		integral = 0;
+		currAng = 0;
 	} else if (currAng > 180) {
 		integral = 0;
+		currAng = 180;
 	} else {
 		servo_rotate((uint32_t) currAng);
 	}
-
-	prevErr = err;
 }

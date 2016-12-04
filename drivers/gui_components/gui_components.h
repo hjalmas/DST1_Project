@@ -40,6 +40,7 @@
 #define TEXTFIELD 0
 #define TEXTFEED 1
 #define BUTTON 2
+#define GRAPH 3
 
 /**
  * -----------------------------------------------------------------------------------------------------
@@ -85,6 +86,18 @@ typedef struct Button {
 	uint16_t align;
 	void (*cbButton)(void);		/* Callback function for this button */
 } Button_t;
+
+typedef struct Graph {
+	type_t type;
+	uint16_t width;
+	uint16_t height;
+	uint16_t x_ticks;
+	uint32_t x_min;
+	uint32_t x_max;
+	uint16_t y_ticks;
+	uint32_t y_min;
+	uint32_t y_max;
+} Graph_t;
 
 /**
  * -----------------------------------------------------------------------------------------------------

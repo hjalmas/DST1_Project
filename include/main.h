@@ -24,6 +24,7 @@
 #include "../drivers/servo/servo.h"
 #include "../drivers/ldr_driver/ldr_driver.h"
 #include "../drivers/suntracker/suntracker.h"
+#include "../drivers/rtc_driver/rtc_driver.h"
 
 #endif
 
