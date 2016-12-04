@@ -48,8 +48,7 @@ extern void gui_init(void);
 extern void cbKeyPress(void);
 extern void cbTempSensor(void);
 extern void cbBarometer(void);
-
-extern void toggle(void);
+extern void cbTimeUpdate(void);
 
 void delay_ms(uint32_t t_ms);
 uint32_t getTicks(void);
@@ -172,6 +171,11 @@ void SysTick_Handler(void) {
 	if(ticks % SUNTRACKER_DT == 0) {
 		/* Add suntracker callback routine to function queue */
 		fnQOffer(cbSuntracker);
+	}
+
+	if(ticks % 1000 == 0) {
+		/* Add time update callback routine to function queue */
+		fnQOffer(cbTimeUpdate);
 	}
 
 }

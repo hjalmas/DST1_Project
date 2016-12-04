@@ -237,6 +237,15 @@ void gui_Button_show(Button_t* button) {
 }
 
 /**
+ * Prints text to the screen.
+ */
+void gui_print_text(char* text, uint8_t row, uint8_t col) {
+	graph_print_text(text, row, col, TEXT_ALIGN_LEFT);
+
+	set_ComponentFocus(selectedComponent);
+}
+
+/**
  * ------------------------------------------------------------------------------------------------------
  * 											PRIVATE FUNCTIONS
  * ------------------------------------------------------------------------------------------------------

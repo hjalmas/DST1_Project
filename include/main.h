@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "diag/Trace.h"
 #include "cmsis_device.h"
 #include "sam3x_conf.h"

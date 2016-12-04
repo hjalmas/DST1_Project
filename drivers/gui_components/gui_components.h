@@ -174,4 +174,9 @@ void gui_Button_init(
  */
 void gui_Button_show(Button_t* button);
 
+/**
+ * Prints text to the screen.
+ */
+void gui_print_text(char* text, uint8_t row, uint8_t col);
+
 #endif /* GUI_COMPONENTS_H_ */

@@ -141,7 +141,7 @@ void rtc_init(void) {
 
 	/* Set 24H mode */
 	volatile uint8_t tmp = rtc_rd_reg(HOURS);
-	rtc_wr_reg(HOURS, tmp & ~HOUR_AMPM_MSK);
+	rtc_wr_reg(HOURS, tmp & ~HOUR_SELECT_MSK);
 }
 
 /**
@@ -182,33 +182,37 @@ void rtc_set_time(timestamp_t* time) {
 timestamp_t* rtc_get_timestamp(void) {
 	timestamp_t* result = malloc(sizeof(timestamp_t));
 
+	rtc_startStop(false);
+
 	/* Set seconds */
 	volatile uint8_t tmp = rtc_rd_reg(SECONDS);
-	result->seconds = ((tmp & SECOND10_MSK) >> 4) * 10 + tmp & SECOND_MSK;
+	result->seconds = (uint8_t)((tmp & SECOND10_MSK) >> 4) * 10 + (uint8_t)(tmp & SECOND_MSK);
 
 	/* Set minutes */
 	tmp = rtc_rd_reg(MINUTES);
-	result->minutes = ((tmp & MIN10_MSK) >> 4) * 10 + tmp & MIN_MSK;
+	result->minutes = (uint8_t)((tmp & MIN10_MSK) >> 4) * 10 + (uint8_t)(tmp & MIN_MSK);
 
 	/* Set hours */
 	tmp = rtc_rd_reg(HOURS);
-	result->hours = ((tmp & HOUR10_MSK) >> 4) * 10 + tmp & HOUR_MSK;
+	result->hours = (uint8_t)((tmp & HOUR10_MSK) >> 4) * 10 + (uint8_t)(tmp & HOUR_MSK);
 
 	/* Set Day */
 	tmp = rtc_rd_reg(DAY);
-	result->day = tmp & DAY_MSK;
+	result->day = (uint8_t)(tmp & DAY_MSK);
 
 	/* Set date */
 	tmp = rtc_rd_reg(DATE);
-	result->date = ((tmp & DATE10_MSK) >> 4) * 10 + tmp & DATE_MSK;
+	result->date = (uint8_t)((tmp & DATE10_MSK) >> 4) * 10 + (uint8_t)(tmp & DATE_MSK);
 
 	/* Set month */
 	tmp = rtc_rd_reg(MONTH);
-	result->month = ((tmp & MONTH10_MSK) >> 4) * 10 + tmp & MONTH_MSK;
+	result->month = (uint8_t)((tmp & MONTH10_MSK) >> 4) * 10 + (uint8_t)(tmp & MONTH_MSK);
 
 	/* Set year */
 	tmp = rtc_rd_reg(YEAR);
-	result->year = ((tmp & YEAR10_MSK) >> 4) * 10 + tmp & YEAR_MSK;
+	result->year = (uint8_t)((tmp & YEAR10_MSK) >> 4) * 10 + (uint8_t)(tmp & YEAR_MSK);
+
+	rtc_startStop(true);
 
 	return result;
 }

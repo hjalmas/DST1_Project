@@ -45,6 +45,12 @@ static Page_t page_settings_datetime;
 static Page_t* currPage = &page_main_menu;
 static Page_t* previousPage = &page_main_menu;
 
+/* time display box */
+TextField_t timeTxtField;
+char timeBuffer[20];
+const uint8_t timeRow = 16;
+const uint8_t timeCol = 1;
+
 /* Main menu components --------------------------*/
 Button_t menuLiveWeatherDataBtn;
 Button_t menuItem2Btn;
@@ -103,6 +109,9 @@ uint32_t dateTimeIdx = 0;
  * 												PROTOTYPES
  * -----------------------------------------------------------------------------------------------------
  */
+/* Dummy callback -------------------------*/
+void cbDummy(void);
+
 /* GUI functions ---------------------------*/
 void gui_init(void);
 void showMainMenu(void);
@@ -115,6 +124,7 @@ void showSettingsDateTimePage(void);
 void cbKeyPress(void);
 void cbTempSensor(void);
 void cbBarometer(void);
+void cbTimeUpdate(void);
 
 /* Main menu callbacks ---------------------*/
 void cbMenuLiveWeatherDataBtn(void);
@@ -141,6 +151,7 @@ static void degCelsius(uint16_t row, uint16_t col);
 static void toTmpStr(char* strBuffer, uint32_t val);
 static void toPressStr(char* strBuffer, uint32_t val);
 static void showPage(Page_t* page);
+static void drawFrame(void);
 
 /**
  * -----------------------------------------------------------------------------------------------------
@@ -174,6 +185,8 @@ void gui_init(void) {
 	page_settings_datetime.showPageFn = showSettingsDateTimePage;
 	page_settings_datetime.selectedComponent = &secondsTxtField;
 
+	/* Initialize time text field */
+	gui_TextField_init(&timeTxtField, "", 15, 1, 18, cbDummy);
 
 	/* Initialize main menu components */
 	gui_Button_init(&menuLiveWeatherDataBtn,"Live Weather Data", 7, 10, 20, cbMenuLiveWeatherDataBtn);
@@ -193,17 +206,17 @@ void gui_init(void) {
 
 	/* Initialize settings page components */
 	gui_Button_init(&dateTimeBtn, "Date/time", 4, 2, 12, cbDateTimeBtn);
-	gui_Button_init(&settingsReturnBtn, "Return", 15, 16, 8, cbSettingsReturnBtn);
+	gui_Button_init(&settingsReturnBtn, "Return", 14, 16, 8, cbSettingsReturnBtn);
 
 	/* Initialize settings_datetime components */
 	gui_Button_init(&dateTimeCancelBtn, "Cancel", 15, 32, 6, cbDateTimeCancelBtn);
 	gui_Button_init(&dateTimeOkBtn, "Ok", 15, 26, 4, cbDateTimeOkBtn);
-	gui_TextField_init(&secondsTxtField, "", 4, 19, 5, NULL);
-	gui_TextField_init(&minutesTxtField, "", 6, 19, 5, NULL);
-	gui_TextField_init(&hoursTxtField, "", 8, 19, 5, NULL);
-	gui_TextField_init(&dateTxtField, "", 10, 19, 5, NULL);
-	gui_TextField_init(&monthTxtField, "", 12, 19, 5, NULL);
-	gui_TextField_init(&yearTxtField, "", 14, 19, 5, NULL);
+	gui_TextField_init(&secondsTxtField, "", 4, 19, 5, cbDummy);
+	gui_TextField_init(&minutesTxtField, "", 6, 19, 5, cbDummy);
+	gui_TextField_init(&hoursTxtField, "", 8, 19, 5, cbDummy);
+	gui_TextField_init(&dateTxtField, "", 10, 19, 5, cbDummy);
+	gui_TextField_init(&monthTxtField, "", 12, 19, 5, cbDummy);
+	gui_TextField_init(&yearTxtField, "", 14, 19, 5, cbDummy);
 
 	showMainMenu();
 }
@@ -215,8 +228,11 @@ void showMainMenu(void) {
 	currPage = &page_main_menu;
 	menuIdx = 0;
 	disp_full_clear();
-	graph_draw_rect(0, 0, 240, 128, true);
-	graph_draw_rect(2, 2, 236, 124, true);
+
+	gui_print_text(timeBuffer, timeRow, timeCol);
+
+	drawFrame();
+
 	graph_draw_rect(40, 16, 155, 96, true);
 	graph_draw_rect(38, 14, 159, 100, true);
 	graph_print_textBox("~Main Menu~", 4, 1, TEXT_ALIGN_CENTER);
@@ -233,8 +249,11 @@ void showMainMenu(void) {
 void showLiveWeatherData(void) {
 	currPage = &page_live_weather;
 	disp_full_clear();
-	graph_draw_rect(0, 0, 240, 128, true);
-	graph_draw_rect(2, 2, 236, 124, true);
+
+	gui_print_text(timeBuffer, timeRow, timeCol);
+
+	drawFrame();
+
 	graph_print_textBox("~Live Weather Data~", 3, 1, TEXT_ALIGN_CENTER);
 	graph_print_text("Temperature: ", 6, 9, TEXT_ALIGN_LEFT);
 	gui_TextField_show(&tempTxtField);
@@ -273,9 +292,13 @@ void showErrorPage(char** messages, uint32_t length) {
  */
 void showSettingsPage(void) {
 	currPage = &page_settings;
+	settingsIdx = 0;
 	disp_full_clear();
-	graph_draw_rect(0, 0, 240, 128, true);
-	graph_draw_rect(2, 2, 236, 124, true);
+
+	gui_print_text(timeBuffer, timeRow, timeCol);
+
+	drawFrame();
+
 	graph_print_textBox("~Settings~", 2, 1, TEXT_ALIGN_CENTER);
 
 	gui_Button_show(&settingsReturnBtn);
@@ -287,9 +310,13 @@ void showSettingsPage(void) {
  */
 void showSettingsDateTimePage(void) {
 	currPage = &page_settings_datetime;
+	dateTimeIdx = 0;
 	disp_full_clear();
-	graph_draw_rect(0, 0, 240, 128, true);
-	graph_draw_rect(2, 2, 236, 124, true);
+
+	gui_print_text(timeBuffer, timeRow, timeCol);
+
+	drawFrame();
+
 	graph_print_textBox("~Set Date/Time~", 2, 1, TEXT_ALIGN_CENTER);
 
 	gui_Button_show(&dateTimeCancelBtn);
@@ -441,13 +468,35 @@ void cbBarometer(void) {
 }
 
 /**
+ * Updates the time field.
+ */
+void cbTimeUpdate(void) {
+	timestamp_t* t = rtc_get_timestamp();
+	sprintf(timeBuffer, "%02d-%02d-%02d %02d:%02d:%02d",
+			t->year,
+			t->month,
+			t->date,
+			t->hours,
+			t->minutes,
+			t->seconds
+	);
+	free(t);
+
+	gui_print_text(timeBuffer, timeRow, timeCol);
+}
+
+/**
  * -----------------------------------------------------------------------------------------------------
  * 												CALLBACK FUNCTIONS
  * -----------------------------------------------------------------------------------------------------
  */
 
-/* Main menu callbacks ---------------------*/
+/* Dummy callback */
+void cbDummy(void) {
 
+}
+
+/* Main menu callbacks ---------------------*/
 void cbMenuLiveWeatherDataBtn(void) {
 	showPage(&page_live_weather);
 }
@@ -485,7 +534,78 @@ void cbSettingsReturnBtn(void) {
 
 /* Settings_datetime callback functions ----*/
 void cbDateTimeOkBtn(void) {
+	volatile timestamp_t time;
+	time.seconds = atoi(secondsTxtField.text);
+	time.minutes = atoi(minutesTxtField.text);
+	time.hours = atoi(hoursTxtField.text);
+	time.date = atoi(dateTxtField.text);
+	time.month = atoi(monthTxtField.text);
+	time.year = atoi(yearTxtField.text);
 
+	if(time.seconds > 59) {
+		char* msg[] = {
+				"Seconds out of range!",
+				"Acceptable range:",
+				"00 - 59",
+				"Please try again"
+		};
+		showErrorPage(msg, 4);
+		return;
+
+	} else if(time.minutes > 59) {
+		char* msg[] = {
+				"Minutes out of range!",
+				"Acceptable range:",
+				"00 - 59",
+				"Please try again"
+		};
+		showErrorPage(msg, 4);
+		return;
+
+	} else if(time.hours > 23) {
+		char* msg[] = {
+				"Hours out of range!",
+				"Acceptable range:",
+				"00 - 23",
+				"Please try again"
+		};
+		showErrorPage(msg, 4);
+		return;
+
+	} else if(time.date < 1 || time.date > 31) {
+		char* msg[] = {
+				"Day out of range!",
+				"Acceptable range:",
+				"01 - 31",
+				"Please try again"
+		};
+		showErrorPage(msg, 4);
+		return;
+
+	} else if(time.month < 1 || time.month > 12) {
+		char* msg[] = {
+				"Month out of range!",
+				"Acceptable range:",
+				"01 - 12",
+				"Please try again"
+		};
+		showErrorPage(msg, 4);
+		return;
+
+	} else if(time.year > 99) {
+		char* msg[] = {
+				"Year out of range!",
+				"Acceptable range:",
+				"00 - 99",
+				"Please try again"
+		};
+		showErrorPage(msg, 4);
+		return;
+	}
+
+	rtc_set_time(&time);
+
+	showPage(&page_settings);
 }
 
 void cbDateTimeCancelBtn(void) {
@@ -537,3 +657,14 @@ static void showPage(Page_t* page) {
 	gui_select_component(page->selectedComponent);
 	page->showPageFn();
 }
+
+/**
+ * Draw the frame onto the screen.
+ */
+static void drawFrame(void) {
+	graph_draw_line(0, 0, 239, 0, true);
+	graph_draw_line(239, 0, 239, 127, true);
+	graph_draw_line(239, 127, 103, 127, true);
+	graph_draw_line(0, 118, 0, 0, true);
+}
+
